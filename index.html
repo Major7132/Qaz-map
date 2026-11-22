@@ -1,168 +1,402 @@
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#242424">
 <title>QAZ MAPS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f4f6f2;color:#202820}
-#map{position:absolute;inset:0;z-index:1}
-.top{position:absolute;z-index:500;top:10px;left:12px;right:12px}
-.brand,.search,.actions{background:white;border-radius:18px;box-shadow:0 5px 20px #0002}
-.brand{display:flex;align-items:center;padding:10px;gap:10px;width:max-content}
-.logo{font-size:30px;background:#f5eddf;border-radius:12px;padding:5px}
-.brand b{font-size:19px;color:#276b48}
-.brand small{display:block;color:#888;font-size:10px}
-.search{margin-top:10px;padding:8px;display:flex;gap:6px}
-input{border:0;outline:0;flex:1;min-width:0;font-size:15px;padding:8px}
-button{border:0;cursor:pointer}
-.search button{background:#276b48;color:white;border-radius:12px;padding:10px}
-.controls{position:absolute;z-index:500;right:12px;top:150px;display:grid;gap:8px}
-.controls button{background:white;border-radius:14px;width:45px;height:45px;font-size:20px;box-shadow:0 4px 15px #0002}
-.bottom{position:absolute;z-index:500;bottom:15px;left:12px;right:12px}
-.actions{display:grid;grid-template-columns:repeat(4,1fr);padding:8px}
-.action{background:white;color:#68736a;padding:9px 2px;font-size:11px;border-radius:12px}
-.action span{display:block;font-size:21px;margin-bottom:4px}
-.action.active{background:#e7f1e9;color:#276b48}
-.results{display:none;background:white;border-radius:14px;margin-top:6px;max-height:35vh;overflow:auto;box-shadow:0 5px 20px #0002}
-.result{padding:12px;border-bottom:1px solid #eee;font-size:14px}
-.result small{display:block;color:#888;margin-top:4px}
-.toast{display:none;position:absolute;z-index:900;bottom:100px;left:50%;transform:translateX(-50%);background:#26362c;color:white;padding:12px;border-radius:12px;font-size:13px}
-.route{display:none;background:white;border-radius:16px;padding:13px;margin-bottom:8px;box-shadow:0 4px 15px #0002}
+body{margin:0;background:#171923;color:white;font-family:-apple-system,Arial,sans-serif;overflow:hidden}
+#map{position:absolute;inset:0;z-index:1;background:#171923}
+
+.top{position:absolute;top:15px;left:15px;right:15px;z-index:500;display:flex;justify-content:center;pointer-events:none}
+.logo{background:#20c65a;color:white;border-radius:30px;padding:10px 20px;font-weight:900;font-size:20px;box-shadow:0 4px 18px #0005}
+.logo span{margin-right:7px}
+
+.right{position:absolute;right:15px;top:85px;z-index:500;display:grid;gap:12px}
+.control{width:53px;height:53px;border:0;border-radius:17px;background:#17191f;color:white;font-size:24px;box-shadow:0 5px 15px #0006}
+
+.left{position:absolute;left:15px;bottom:205px;z-index:500}
+.weather{background:#17191f;padding:13px;border-radius:17px;font-size:18px}
+
+.quick{position:absolute;bottom:145px;left:15px;right:15px;z-index:500;display:flex;gap:9px;overflow-x:auto}
+.quick button{background:#17191f;color:white;border:0;border-radius:15px;padding:14px 18px;white-space:nowrap;font-size:15px}
+
+.panel{position:absolute;bottom:0;left:0;right:0;z-index:600;background:#242424;border-radius:27px 27px 0 0;padding:13px 15px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -5px 25px #0005}
+.handle{width:48px;height:5px;background:#444;border-radius:8px;margin:0 auto 15px}
+
+.searchrow{display:flex;gap:9px}
+.search{flex:1;display:flex;align-items:center;background:#333;border-radius:15px;padding:0 13px}
+.search input{background:none;border:0;outline:0;color:white;font-size:17px;width:100%;padding:14px}
+.search button{background:none;color:#aaa;font-size:22px}
+.menu{background:#333;border:0;border-radius:15px;color:white;font-size:25px;width:58px}
+
+.results{display:none;background:#333;border-radius:12px;margin-top:8px;max-height:180px;overflow:auto}
+.result{padding:13px;border-bottom:1px solid #484848;font-size:14px;cursor:pointer}
+.result small{display:block;color:#aaa;margin-top:4px}
+
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);margin-top:18px;text-align:center}
+.tab{background:none;border:0;color:#999;font-size:12px;padding:5px 0}
+.tab b{display:block;font-size:25px;margin-bottom:5px}
+.tab.active{color:#20c65a}
+
+.toast{display:none;position:absolute;z-index:900;bottom:260px;left:50%;transform:translateX(-50%);background:#222;padding:12px 17px;border-radius:12px;white-space:nowrap}
+
+.routebox{display:none;background:#333;padding:12px;border-radius:13px;margin-top:9px;font-size:14px}
+.routebox button{float:right;background:none;color:white;font-size:18px;border:0}
+
+@media(min-width:700px){
+.panel{left:50%;right:auto;width:430px;transform:translateX(-50%)}
+}
 </style>
 </head>
+
 <body>
 <div id="map"></div>
 
 <div class="top">
- <div class="brand">
-  <div class="logo">🍂</div>
-  <div><b>QAZ MAPS</b><small>ТВОЙ ГОРОД · ТВОЙ МАРШРУТ</small></div>
+ <div class="logo"><span>🍂</span>QAZ MAPS</div>
+</div>
+
+<div class="right">
+ <button class="control" onclick="toggleSatellite()">🛰️</button>
+ <button class="control" onclick="locate()">➤</button>
+ <button class="control" onclick="map.zoomIn()">＋</button>
+ <button class="control" onclick="map.zoomOut()">−</button>
+</div>
+
+<div class="left">
+ <div class="weather">🌙 5°</div>
+</div>
+
+<div class="quick">
+ <button onclick="showFavorites()">☆ Избранное</button>
+ <button onclick="goHome()">⌂ Обзор</button>
+ <button onclick="buildRoute()">🚗 Маршрут</button>
+ <button onclick="locate()">➤ Моё место</button>
+</div>
+
+<div class="panel">
+ <div class="handle"></div>
+
+ <div class="searchrow">
+  <div class="search">
+   <span style="font-size:22px;color:#aaa">⌕</span>
+   <input id="query" placeholder="Поиск">
+   <button onclick="searchPlaces()">⌕</button>
+  </div>
+  <button class="menu" onclick="showMenu()">☰</button>
  </div>
- <div class="search">
-  <input id="search" placeholder="Куда отправимся?">
-  <button onclick="searchPlaces()">Найти</button>
- </div>
+
  <div class="results" id="results"></div>
-</div>
+ <div class="routebox" id="routebox"></div>
 
-<div class="controls">
- <button onclick="map.zoomIn()">＋</button>
- <button onclick="map.zoomOut()">−</button>
- <button onclick="toggleSatellite()">▧</button>
- <button onclick="toggleTraffic()">🚦</button>
- <button onclick="locate()">◎</button>
-</div>
-
-<div class="bottom">
- <div class="route" id="route"></div>
- <div class="actions">
-  <button class="action" onclick="buildRoute()"><span>➤</span>Маршрут</button>
-  <button class="action" onclick="toggleFavorite()"><span>☆</span>Избранное</button>
-  <button class="action" onclick="locate()"><span>◎</span>Где я</button>
-  <button class="action" onclick="home()"><span>⌂</span>Обзор</button>
+ <div class="tabs">
+  <button class="tab active" onclick="tab(this,'Поиск')"><b>▦</b>Поиск</button>
+  <button class="tab" onclick="tab(this,'Проезд')"><b>〽</b>Проезд</button>
+  <button class="tab" onclick="tab(this,'Навигатор')"><b>➤</b>Навигатор</button>
+  <button class="tab" onclick="tab(this,'Избранное')"><b>☆</b>Избранное</button>
+  <button class="tab" onclick="tab(this,'Советы')"><b>◈</b>Советы</button>
  </div>
 </div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
-const map=L.map('map').setView([50.2839,57.167],13);
-const street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
- attribution:'© OpenStreetMap',maxZoom:19
-}).addTo(map);
-const satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
-let satelliteOn=false,trafficOn=false;
-let myPosition=null,selected=null,marker=null,routeLine=null;
+const map=L.map('map',{
+ zoomControl:false,
+ minZoom:3,
+ maxZoom:22
+}).setView([50.2839,57.167],14);
+
+const streets=L.tileLayer(
+'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+{
+ attribution:'© OpenStreetMap © CARTO',
+ maxZoom:22,
+ maxNativeZoom:19,
+ keepBuffer:4
+}
+).addTo(map);
+
+const satellite=L.tileLayer(
+'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+{
+ attribution:'© Esri',
+ maxZoom:22,
+ maxNativeZoom:19,
+ keepBuffer:4,
+ updateWhenZooming:false,
+ updateWhenIdle:true
+}
+);
+
+let satelliteOn=false;
+let position=null;
+let destination=null;
+let route=null;
+let marker=null;
+let userMarker=null;
+
 let favorites=JSON.parse(localStorage.getItem('qaz_favorites')||'[]');
 
 function toast(t){
  const el=document.getElementById('toast');
- el.textContent=t;el.style.display='block';
- setTimeout(()=>el.style.display='none',2500);
+ el.textContent=t;
+ el.style.display='block';
+ clearTimeout(window.toastTimer);
+ window.toastTimer=setTimeout(()=>el.style.display='none',2500);
 }
-function escapeHTML(s){
- return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function safeText(s){
+ return String(s).replace(/[&<>"']/g,c=>({
+ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+ }[c]));
 }
+
+function tab(el,name){
+ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+ el.classList.add('active');
+
+ if(name==='Поиск'){
+ document.getElementById('query').focus();
+ toast('Поиск мест');
+ }
+ if(name==='Проезд'||name==='Навигатор')buildRoute();
+ if(name==='Избранное')showFavorites();
+ if(name==='Советы')toast('Советы QAZ MAPS скоро появятся');
+}
+
 async function searchPlaces(){
- const q=document.getElementById('search').value.trim();
- if(!q)return toast('Введи название места');
+ const q=document.getElementById('query').value.trim();
+ if(!q)return toast('Введите адрес');
+
  const box=document.getElementById('results');
- box.style.display='block';box.innerHTML='<div class="result">Ищем...</div>';
+ box.style.display='block';
+ box.innerHTML='<div class="result">Поиск...</div>';
+
  try{
-  const data=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=ru&q='+encodeURIComponent(q)).then(r=>r.json());
-  if(!data.length){box.innerHTML='<div class="result">Ничего не найдено</div>';return}
-  box.innerHTML=data.map((p,i)=>`<div class="result" data-i="${i}">${escapeHTML(p.name||p.display_name.split(',')[0])}<small>${escapeHTML(p.display_name)}</small></div>`).join('');
-  box.querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>choose(data[+el.dataset.i]));
- }catch(e){box.innerHTML='<div class="result">Ошибка поиска. Проверь интернет.</div>'}
+ const data=await fetch(
+ 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=7&accept-language=ru&q='+encodeURIComponent(q)
+ ).then(r=>r.json());
+
+ if(!data.length){
+ box.innerHTML='<div class="result">Ничего не найдено</div>';
+ return;
+ }
+
+ box.innerHTML=data.map((p,i)=>
+ `<div class="result" data-i="${i}">
+ ${safeText(p.name||p.display_name.split(',')[0])}
+ <small>${safeText(p.display_name)}</small>
+ </div>`
+ ).join('');
+
+ box.querySelectorAll('[data-i]').forEach(el=>{
+ el.onclick=()=>selectPlace(data[+el.dataset.i]);
+ });
+
+ }catch(e){
+ toast('Ошибка поиска');
+ }
 }
-document.getElementById('search').addEventListener('keydown',e=>{if(e.key==='Enter')searchPlaces()});
-function choose(p){
- selected={lat:+p.lat,lon:+p.lon,name:p.display_name};
+
+document.getElementById('query').addEventListener('keydown',e=>{
+ if(e.key==='Enter')searchPlaces();
+});
+
+function selectPlace(p){
+ destination={
+ lat:+p.lat,
+ lon:+p.lon,
+ name:p.display_name
+ };
+
  if(marker)map.removeLayer(marker);
- marker=L.marker([selected.lat,selected.lon]).addTo(map).bindPopup(escapeHTML(selected.name.split(',')[0])).openPopup();
- map.setView([selected.lat,selected.lon],16);
- document.getElementById('search').value=selected.name.split(',')[0];
+
+ marker=L.marker([destination.lat,destination.lon])
+ .addTo(map)
+ .bindPopup(safeText(destination.name.split(',')[0]))
+ .openPopup();
+
+ map.setView([destination.lat,destination.lon],17);
  document.getElementById('results').style.display='none';
+ document.getElementById('query').value=destination.name.split(',')[0];
+
+ toast('Место найдено');
 }
+
 function toggleSatellite(){
  satelliteOn=!satelliteOn;
- if(satelliteOn){map.removeLayer(street);satellite.addTo(map)}
- else{map.removeLayer(satellite);street.addTo(map)}
- toast(satelliteOn?'Спутник включён':'Обычная карта');
+
+ if(satelliteOn){
+ map.removeLayer(streets);
+ satellite.addTo(map);
+ }else{
+ map.removeLayer(satellite);
+ streets.addTo(map);
+ }
+
+ toast(satelliteOn?'Спутниковый режим включён':'Обычная карта включена');
 }
-function toggleTraffic(){
- trafficOn=!trafficOn;
- toast(trafficOn?'Режим пробок выбран. Живые данные пока не подключены':'Пробки выключены');
-}
+
 function locate(){
- if(!navigator.geolocation)return toast('Геолокация недоступна');
- toast('Определяем местоположение...');
+ if(!navigator.geolocation)
+ return toast('Геолокация недоступна');
+
+ toast('Ищем твоё местоположение...');
+
  navigator.geolocation.getCurrentPosition(p=>{
-  myPosition=[p.coords.latitude,p.coords.longitude];
-  L.circleMarker(myPosition,{radius:9,color:'white',weight:4,fillColor:'#2676d2',fillOpacity:1}).addTo(map);
-  map.setView(myPosition,16);toast('Ты здесь!');
- },()=>toast('Разреши доступ к геолокации'));
+ position=[p.coords.latitude,p.coords.longitude];
+
+ if(userMarker)map.removeLayer(userMarker);
+
+ userMarker=L.circleMarker(position,{
+ radius:9,
+ color:'white',
+ weight:3,
+ fillColor:'#20c65a',
+ fillOpacity:1
+ }).addTo(map).bindPopup('Ты здесь');
+
+ map.setView(position,17);
+ toast('Местоположение найдено');
+
+ },()=>{
+ toast('Разреши геолокацию в Safari');
+ },{enableHighAccuracy:true,timeout:15000});
 }
+
+async function buildRoute(){
+ if(!destination){
+ toast('Сначала найди место назначения');
+ document.getElementById('query').focus();
+ return;
+ }
+
+ const start=position||[map.getCenter().lat,map.getCenter().lng];
+ const end=[destination.lat,destination.lon];
+
+ try{
+ const url=`https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+
+ const data=await fetch(url).then(r=>r.json());
+
+ if(!data.routes?.length){
+ toast('Маршрут не найден');
+ return;
+ }
+
+ if(route)map.removeLayer(route);
+
+ route=L.geoJSON(data.routes[0].geometry,{
+ style:{
+ color:'#20c65a',
+ weight:7,
+ opacity:.95
+ }
+ }).addTo(map);
+
+ map.fitBounds(route.getBounds(),{padding:[40,40]});
+
+ const r=data.routes[0];
+ const box=document.getElementById('routebox');
+
+ box.style.display='block';
+ box.innerHTML=`
+ <b>🚗 Маршрут готов</b>
+ <button onclick="clearRoute()">✕</button>
+ <br>${(r.distance/1000).toFixed(1)} км · около ${Math.round(r.duration/60)} мин
+ `;
+
+ toast('Маршрут построен');
+
+ }catch(e){
+ toast('Ошибка маршрута');
+ }
+}
+
+function clearRoute(){
+ if(route)map.removeLayer(route);
+ route=null;
+ document.getElementById('routebox').style.display='none';
+}
+
 function toggleFavorite(){
- if(!selected)return toast('Сначала выбери место');
- const i=favorites.findIndex(f=>f.lat===selected.lat&&f.lon===selected.lon);
- if(i>=0){favorites.splice(i,1);toast('Удалено из избранного')}
- else{favorites.push(selected);toast('Добавлено в избранное')}
+ if(!destination)return toast('Сначала выбери место');
+
+ const i=favorites.findIndex(f=>
+ f.lat===destination.lat&&f.lon===destination.lon
+ );
+
+ if(i>=0){
+ favorites.splice(i,1);
+ toast('Удалено из избранного');
+ }else{
+ favorites.push(destination);
+ toast('Добавлено в избранное');
+ }
+
  localStorage.setItem('qaz_favorites',JSON.stringify(favorites));
 }
-async function buildRoute(){
- if(!selected)return toast('Сначала найди место');
- const start=myPosition||[map.getCenter().lat,map.getCenter().lng];
- const end=[selected.lat,selected.lon];
- try{
-  const url=`https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
-  const data=await fetch(url).then(r=>r.json());
-  if(!data.routes?.length)return toast('Маршрут не найден');
-  if(routeLine)map.removeLayer(routeLine);
-  routeLine=L.geoJSON(data.routes[0].geometry,{style:{color:'#276b48',weight:6}}).addTo(map);
-  map.fitBounds(routeLine.getBounds(),{padding:[40,40]});
-  const r=data.routes[0];
-  document.getElementById('route').style.display='block';
-  document.getElementById('route').innerHTML=`<b>Маршрут готов</b><br>${(r.distance/1000).toFixed(1)} км · около ${Math.round(r.duration/60)} мин <button onclick="clearRoute()">✕</button>`;
-  toast('Маршрут построен');
- }catch(e){toast('Не удалось построить маршрут')}
+
+function showFavorites(){
+ const box=document.getElementById('results');
+ box.style.display='block';
+
+ if(!favorites.length){
+ box.innerHTML='<div class="result">Избранное пока пустое</div>';
+ return;
+ }
+
+ box.innerHTML=favorites.map((f,i)=>
+ `<div class="result" data-fav="${i}">
+ ☆ ${safeText(f.name.split(',')[0])}
+ <small>${safeText(f.name)}</small>
+ </div>`
+ ).join('');
+
+ box.querySelectorAll('[data-fav]').forEach(el=>{
+ el.onclick=()=>selectPlace(favorites[+el.dataset.fav]);
+ });
 }
-function clearRoute(){
- if(routeLine)map.removeLayer(routeLine);
- routeLine=null;document.getElementById('route').style.display='none';
-}
-function home(){
- map.setView([50.2839,57.167],13);
+
+function goHome(){
+ map.setView([50.2839,57.167],14);
  toast('Обзор Актобе');
 }
+
+function showMenu(){
+ const choice=prompt(
+ 'QAZ MAPS\n\n1 — Избранное\n2 — Очистить маршрут\n3 — Обзор карты'
+ );
+
+ if(choice==='1')showFavorites();
+ if(choice==='2')clearRoute();
+ if(choice==='3')goHome();
+}
+
 map.on('click',e=>{
- selected={lat:e.latlng.lat,lon:e.latlng.lng,name:'Выбранная точка'};
+ destination={
+ lat:e.latlng.lat,
+ lon:e.latlng.lng,
+ name:'Выбранная точка'
+ };
+
  if(marker)map.removeLayer(marker);
- marker=L.marker(e.latlng).addTo(map).bindPopup('Выбранная точка').openPopup();
+
+ marker=L.marker(e.latlng)
+ .addTo(map)
+ .bindPopup('Выбранная точка')
+ .openPopup();
+
+ toast('Точка выбрана');
 });
 </script>
 </body>
